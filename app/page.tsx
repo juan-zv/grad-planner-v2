@@ -14,11 +14,8 @@ export default function Home() {
                                 Details</Link>
                         </div>
                     </div>
-
                 </main>
-
             </div>
-
         </Fragment>
     );
 }
