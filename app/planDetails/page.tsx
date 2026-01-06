@@ -81,8 +81,8 @@ export default function PlanDetailsPage() {
 
     const requirementCourses = [
         { code: "REL 200C", name: "The Eternal Family", credits: 2, status: "completed" as const },
-        { code: "REL 225C", name: "Foundations Of Restor...", credits: 2, status: "planned" as const },
-        { code: "REL 250C", name: "Jesus Christ Evrlst Gosp...", credits: 2, status: "planned" as const },
+        { code: "REL 225C", name: "Foundations Of Restoration", credits: 2, status: "planned" as const },
+        { code: "REL 250C", name: "Jesus Christ Everlasting Gospel", credits: 2, status: "planned" as const },
     ];
 
     const toggleYear = (year: number) => {
