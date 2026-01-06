@@ -1,6 +1,6 @@
 "use client";
 
-import {Fragment} from "react";
+import {ReactNode} from "react";
 import {
     Bell,
     MessageSquare,
@@ -8,22 +8,83 @@ import {
     ChevronDown,
     Layout,
     Download,
-    Copy,
+    ArrowRightLeft,
     Pencil,
     Search,
-    MinusCircle,
-    ArrowRightLeft
+    MinusCircle
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {Progress} from "@/components/ui/progress";
 import {Input} from "@/components/ui/input";
-import {Badge} from "@/components/ui/badge";
+import {motion, Variants} from "framer-motion";
 import Header from "@/components/header/Header";
+
+// --- INTERFACES & TYPES ---
+
+interface StatItemProps {
+    label: string;
+    value: string | number;
+    color?: string;
+    bold?: boolean;
+}
+
+interface CourseCardProps {
+    code: string;
+    name: string;
+    credits: string | number;
+    colorVariant?: "blue" | "green"; // Restringimos a los colores que manejamos
+    subLabel?: string;
+}
+
+interface SemesterColumnProps {
+    title: string;
+    status: string;
+    credits: string | number;
+    children: ReactNode; // Tipo correcto para elementos hijos en React
+    statusColor?: string;
+    index?: number;
+}
+
+interface ReqCourseItemProps {
+    code: string;
+    name: string;
+    credits: string | number;
+    status?: "completed" | "planned" | "unplanned"; // Opcional si no siempre se pasa
+}
+
+// --- CONFIGURACIÓN DE ANIMACIONES ---
+
+const containerVariants: Variants = {
+    hidden: {opacity: 0},
+    visible: (i: number = 0) => ({
+        opacity: 1,
+        transition: {
+            delayChildren: i * 0.3,
+            staggerChildren: 0.1
+        }
+    })
+};
+
+const itemVariants: Variants = {
+    hidden: {
+        opacity: 0,
+        y: 20,
+        scale: 0.95
+    },
+    visible: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 15
+        }
+    }
+};
 
 // --- SUB-COMPONENTES ---
 
-// 1. Estadísticas del Header (Completed, In-Progress, etc.)
-const StatItem = ({label, value, color = "text-gray-700", bold = false}: any) => (
+const StatItem = ({label, value, color = "text-gray-700", bold = false}: StatItemProps) => (
     <div className="flex flex-col items-center leading-tight">
         <span className="text-[10px] text-gray-500 uppercase font-medium">{label}</span>
         <span className={`text-2xl ${bold ? "font-extrabold" : "font-medium"} ${color}`}>
@@ -32,13 +93,14 @@ const StatItem = ({label, value, color = "text-gray-700", bold = false}: any) =>
     </div>
 );
 
-// 2. Tarjeta de Curso (Las azules y verdes)
-const CourseCard = ({code, name, credits, colorVariant = "blue", subLabel}: any) => {
+const CourseCard = ({code, name, credits, colorVariant = "blue", subLabel}: CourseCardProps) => {
     const bgClass = colorVariant === "blue" ? "bg-[#007da5]" : "bg-[#00C558]";
 
     return (
-        <div
-            className={`flex items-stretch justify-between rounded-sm ${bgClass} p-2 text-white shadow-sm mb-2 cursor-pointer hover:opacity-90 transition-opacity`}>
+        <motion.div
+            variants={itemVariants}
+            className={`flex items-stretch justify-between rounded-sm ${bgClass} p-2 text-white shadow-sm mb-2 cursor-pointer hover:opacity-90 transition-opacity`}
+        >
             <div className="flex items-start gap-2 overflow-hidden">
                 <Pencil className="h-4 w-4 mt-1 opacity-70 shrink-0"/>
                 <div className="flex flex-col min-w-0">
@@ -57,12 +119,18 @@ const CourseCard = ({code, name, credits, colorVariant = "blue", subLabel}: any)
             <div className="flex flex-col justify-between items-end pl-2">
                 <span className="text-sm font-bold">{credits}</span>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
-// 3. Columna de Semestre
-const SemesterColumn = ({title, status, credits, children, statusColor = "text-green-600"}: any) => (
+const SemesterColumn = ({
+                            title,
+                            status,
+                            credits,
+                            children,
+                            statusColor = "text-green-600",
+                            index = 0
+                        }: SemesterColumnProps) => (
     <div className="flex flex-col h-full">
         <div className="flex items-end justify-between mb-2 border-b border-gray-200 pb-1">
             <h3 className="text-base font-semibold text-gray-700">{title}</h3>
@@ -70,9 +138,17 @@ const SemesterColumn = ({title, status, credits, children, statusColor = "text-g
         {status}
       </span>
         </div>
-        <div className="flex-1 space-y-1">
+
+        <motion.div
+            className="flex-1 space-y-1"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            custom={index}
+        >
             {children}
-        </div>
+        </motion.div>
+
         <div className="mt-4 flex flex-col items-end border-t border-gray-100 pt-2">
             <div className="text-xs text-gray-500">Total Credits: <span
                 className="text-xl font-light text-gray-800">{credits}</span></div>
@@ -83,8 +159,7 @@ const SemesterColumn = ({title, status, credits, children, statusColor = "text-g
     </div>
 );
 
-// 4. Item de la lista de Requerimientos (Derecha)
-const ReqCourseItem = ({code, name, credits, status}: any) => (
+const ReqCourseItem = ({code, name, credits, status}: ReqCourseItemProps) => (
     <div
         className="flex items-center justify-between bg-gray-100/80 rounded-md p-2 mb-2 border border-transparent hover:border-gray-300 transition-colors">
         <div className="flex items-center gap-2">
@@ -109,8 +184,7 @@ const ReqCourseItem = ({code, name, credits, status}: any) => (
 export default function PlanDetailsPage() {
     return (
         <div className="min-h-screen bg-gray-50 font-sans text-slate-800 pb-20">
-            <Header />
-
+            <Header/>
             {/* Top Navigation Bar (Stats) */}
             <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
                 <div className="max-w-[1400px] mx-auto px-4 h-16 flex items-center justify-between">
@@ -163,7 +237,7 @@ export default function PlanDetailsPage() {
                 {/* Main Grid Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                    {/* LEFT COLUMN (Plan Schedule) - Spans 8 cols */}
+                    {/* LEFT COLUMN (Plan Schedule) */}
                     <div className="lg:col-span-8 space-y-4">
 
                         {/* Controls Header */}
@@ -190,7 +264,7 @@ export default function PlanDetailsPage() {
                             </div>
                         </div>
 
-                        {/* Collapsible: Transferred Credits */}
+                        {/* Transferred Credits */}
                         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                             <button
                                 className="w-full px-4 py-3 flex items-center justify-between bg-blue-50/50 hover:bg-blue-50 text-blue-600 font-bold text-sm">
@@ -209,9 +283,10 @@ export default function PlanDetailsPage() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
                                 {/* Winter 2026 */}
                                 <SemesterColumn title="Winter 2026" status="ON-TRACK" statusColor="text-gray-500"
-                                                credits="13">
+                                                credits="13" index={0}>
                                     <CourseCard colorVariant="blue" name="Writing/Reasoning Foundation" code="ENG 150"
                                                 credits="3"/>
                                     <CourseCard colorVariant="blue" name="Programming With Functions" code="CSE 111"
@@ -226,7 +301,7 @@ export default function PlanDetailsPage() {
                                 </SemesterColumn>
 
                                 {/* Spring 2026 */}
-                                <SemesterColumn title="Spring 2026" status="ON-TRACK" credits="12">
+                                <SemesterColumn title="Spring 2026" status="ON-TRACK" credits="12" index={1}>
                                     <CourseCard colorVariant="green" name="Introduction To Sociology" code="SOC 111"
                                                 credits="3"/>
                                     <CourseCard colorVariant="green" name="Introduction To Robotics" code="GESCI 208"
@@ -239,7 +314,7 @@ export default function PlanDetailsPage() {
                                 </SemesterColumn>
 
                                 {/* Fall 2026 */}
-                                <SemesterColumn title="Fall 2026" status="FLEX TRACK" credits="3">
+                                <SemesterColumn title="Fall 2026" status="FLEX TRACK" credits="3" index={2}>
                                     <CourseCard colorVariant="green" name="Foundations Of Restoration" code="REL 225C"
                                                 credits="2"/>
                                     <CourseCard colorVariant="green" name="Professional Readiness" code="CSE 300"
@@ -249,13 +324,11 @@ export default function PlanDetailsPage() {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN (Requirements) - Spans 4 cols */}
+                    {/* RIGHT COLUMN (Requirements) */}
                     <div className="lg:col-span-4 space-y-6">
-
                         <div className="bg-white p-5 rounded-lg border border-gray-200 h-full">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Requirements & Courses</h2>
 
-                            {/* Search */}
                             <div className="relative mb-4">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"/>
                                 <Input placeholder="Find Courses..." className="pl-9 bg-gray-50 border-gray-200"/>
@@ -263,7 +336,6 @@ export default function PlanDetailsPage() {
                                     Course Availability</a>
                             </div>
 
-                            {/* Segmented Control / Tabs */}
                             <div className="flex mb-6 border-b border-gray-200">
                                 <div
                                     className="px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 cursor-pointer">General
@@ -277,7 +349,6 @@ export default function PlanDetailsPage() {
                                 </div>
                             </div>
 
-                            {/* Breadcrumb-ish Links */}
                             <div className="flex flex-wrap gap-x-4 gap-y-2 mb-6 px-1">
                                 <span
                                     className="text-xs font-bold text-blue-600 border-b-2 border-blue-600 pb-0.5 cursor-pointer">Cornerstone Requirement</span>
@@ -290,7 +361,6 @@ export default function PlanDetailsPage() {
                                 <span className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer">Breadth Courses 2</span>
                             </div>
 
-                            {/* Progress Section */}
                             <div className="mb-8">
                                 <div className="flex justify-between items-end mb-2">
                                     <h3 className="font-bold text-gray-700">Cornerstone Requirement</h3>
@@ -299,11 +369,9 @@ export default function PlanDetailsPage() {
                                         <span className="text-[9px] text-gray-400 uppercase">Total</span>
                                     </div>
                                 </div>
-                                {/* Custom Progress Bar */}
                                 <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden flex mb-2">
                                     <div className="h-full bg-[#00C558] w-full"/>
                                 </div>
-                                {/* Legend */}
                                 <div className="flex gap-3 text-[10px] text-gray-500 font-medium">
                                     <div className="flex items-center gap-1">
                                         <div className="w-2.5 h-2.5 bg-[#007da5] rounded-sm"></div>
@@ -321,7 +389,6 @@ export default function PlanDetailsPage() {
                                 </div>
                             </div>
 
-                            {/* Requirements List */}
                             <div>
                                 <h3 className="text-sm font-bold text-gray-800 mb-2">Cornerstone Requirements</h3>
                                 <p className="text-xs font-bold text-gray-800 mb-3">Take these courses:</p>
@@ -332,7 +399,6 @@ export default function PlanDetailsPage() {
                                     <ReqCourseItem name="Jesus Christ Evrlst Gosp..." code="REL 250C" credits="2"/>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
